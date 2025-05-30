@@ -1,6 +1,6 @@
 point-chat
 
-本项目为点聊聊天项目，包括前端point-chat-web和后端point-chat。体验地址 <8.138.238.174:8080>
+本项目为点聊聊天项目，包括前端point-chat-web和后端point-chat。体验地址 8.138.238.174:8080
 
 * 技术栈
   * 前端：vue3, ElementPlus, WebSocket, Typescript
