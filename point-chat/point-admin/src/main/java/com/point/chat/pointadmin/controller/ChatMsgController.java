@@ -71,12 +71,6 @@ public class ChatMsgController {
         return ResultBean.success(chatMsgService.getLastCallMsg());
     }
 
-//    @ApiOperationSupport(author = "cao yang")
-//    @Operation(summary = "发送消息")
-//    @PostMapping(value= "/sendMsg")
-//    public ResultBean<Integer> sendMsg(@RequestBody @Validated ChatMsgAddRequest request){
-//        return ResultBean.success(chatMsgService.saveMsg(request));
-//    }
 
     /**
      * 转发消息
@@ -103,6 +97,21 @@ public class ChatMsgController {
     public ResultBean<Boolean> deleteUserMsg(@RequestParam("msgId") @NotNull(message = "消息ID不能为空") Integer msgId) {
         return ResultBean.result(chatMsgService.deleteUserMsg(msgId));
     }
+
+    /**
+    * 删除所有消息
+    */
+
+     @Operation(summary="清空消息")
+     @PostMapping(value="/cleanMsg")
+     @Parameters({
+            @Parameter(name="userId", description="用户ID集合", required = true),
+            @Parameter(name="chatId", description="会话ID", required = true)
+     })
+     public ResultBean<Boolean> cleanMsg(@RequestParam("userId") Integer userId, @RequestParam("chatId") String chatId) {
+         return ResultBean.result(chatMsgService.cleanMsgList(userId, chatId));
+     }
+
 
     /**
      * 撤回消息

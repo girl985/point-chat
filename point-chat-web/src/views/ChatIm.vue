@@ -502,10 +502,10 @@
       <div class="chat-header" style="display: flex; align-items: center; justify-content: space-between;">
         <!--        :class="{ 'long-name': currentUser.userName.length > 6 }" -->
 
-        <div v-if="globalUserType === 1">
+        <div v-if="globalUserType === 1 && currentGroup != null">
           <span class="username-wrap">{{ currentGroup.name }}</span>💬
         </div>
-        <div v-else>
+        <div v-else-if="currentUser != null">
           <span class="username-wrap">{{ currentUser.nickname }}
           </span>
         </div>
@@ -668,7 +668,7 @@
       <div class="drawer-container" :class="{ show: drawerVisible }">
         <div class="drawer-content">
           <!-- 群聊内容 -->
-          <template v-if="currentGroup">
+          <template v-if="globalUserType === 1">
             <div class="group-title">群聊设置</div>
             <div class="member-list">
               <div v-for="member in groupMembers" :key="member.id" class="member-item">
@@ -677,7 +677,7 @@
               </div>
             </div>
             <div class="action-list">
-              <div class="action-item" @click="clearChat">清空聊天记录</div>
+              <div class="action-item" @click="clearGroupChat">清空聊天记录</div>
               <div class="action-item text-danger" @click="quitGroup">退出群聊</div>
             </div>
           </template>
@@ -689,9 +689,9 @@
               <div class="user-name">{{ currentUser.nickname }}</div>
             </div>
             <div class="action-list">
-              <div class="action-item" @click="clearChat">清空聊天记录</div>
+              <div class="action-item" @click="clearSingleChat">清空聊天记录</div>
               <div class="action-item" @click="deleteFriend">删除好友</div>
-              <div class="action-item text-danger" @click="addBlacklist">加入黑名单</div>
+              <!-- <div class="action-item text-danger" @click="addBlacklist">加入黑名单</div> -->
             </div>
           </template>
         </div>
@@ -992,6 +992,7 @@ const loginout = () => {
 }
 
 
+
 let editForm = reactive({
   avatar: '',
   nickname: '',
@@ -1204,7 +1205,15 @@ const startTimer = () => {
   }, 1000)
 }
 
-
+function clearSingleChat() {
+  const params = new URLSearchParams({
+    userId: loginUser.id,
+    chatId: chatRoomId.value
+  });
+  request.post("api/chat/record/cleanMsg", params).then(res => {
+    console.log("清空消息成功！");
+  });
+}
 // 通话功能
 const startVideoCall = () => console.log('发起视频通话')
 // const activeTab = ref('message') // 当前激活的tab
@@ -1496,27 +1505,7 @@ const sendFile = (msg) => {
       console.log("您的浏览器不支持WebSocket");
     } else {
       socket.send(JSON.stringify(newMessage.value));
-      // let socketUrl = "/ws?token=" + window.sessionStorage.getItem("token");
-      // if (!socket) {
-      //   socket = new WebSocket(socketUrl);
-      // }
 
-      // //打开事件
-      // socket.onopen = () => {
-      //   // console.log("websocket已打开");
-      //   socket.send(JSON.stringify(newMessage.value));
-      // }
-      // socket.onmessage = (event) => {
-      //   newMessage.value.msg = '';
-      //   const params = {
-      //     "id": currentGroupId.value,
-      //     "chatId": chatRoomId
-      //   }
-      //   chooseUser(params);
-      // }
-      // socket.onerror = (error) => {
-      //   console.error("WebSocket错误:", error);
-      // };
 
     }
   }
@@ -1524,7 +1513,6 @@ const sendFile = (msg) => {
 
 
 const send = () => {
-  // console.log("globalUserType:", globalUserType);
   if (globalUserType.value === 0) {
     if (!newMessage.value.msg.trim()) {
       ElMessage.warning('请输入聊天内容')
@@ -1574,27 +1562,6 @@ const send = () => {
     } else {
       console.log("您的浏览器支持WebSocket");
       socket.send(JSON.stringify(newMessage.value));
-      // console.log(newMessage.value);
-      // let socketUrl = "/ws?token=" + window.sessionStorage.getItem("token");
-      // if (!socket) {
-      //   socket = new WebSocket(socketUrl);
-      // }
-      // //打开事件
-      // socket.onopen = () => {
-      //   console.log("websocket已打开");
-      //   socket.send(JSON.stringify(newMessage.value));
-      // }
-      // socket.onmessage = (event) => {
-      //   newMessage.value.msg = '';
-      //   const params = {
-      //     "id": currentGroupId.value,
-      //     "chatId": newMessage.value.chatId
-      //   }
-      //   chooseUser(params);
-      // }
-      // socket.onerror = (error) => {
-      //   console.error("WebSocket错误:", error);
-      // };
 
     }
   }
@@ -1839,7 +1806,6 @@ const clearAll = () => {
 
 // 创建群组
 const createGroup = () => {
-  // console.log(groupName.value);
   if (!groupName.value) {
     alert('请填写群聊名称');
     return;
@@ -1860,7 +1826,7 @@ const createGroup = () => {
 
   // 3. 发送请求（Content-Type 默认为 application/x-www-form-urlencoded）
   request.post("api/group/regulate/create", params).then(res => {
-    // console.log("群组创建成功:", res.data);
+    console.log("群组创建成功:", res);
     const idStr = res.data.data.split('_')[1];
     // const id = parseInt(idStr, 10);
     const params1 = new URLSearchParams({
@@ -1873,15 +1839,17 @@ const createGroup = () => {
       } else {
         console.log("更新群聊名称失败！");
       }
+    }).then(aft => {
+      groupName.value = '';
+      searchUserMessage();   //更新消息列表
     })
 
-    searchUserMessage(); // 更新消息列表
   }).catch(error => {
     console.error("请求失败:", error);
   });
 
   clearAll();
-  groupName.value = '';
+
   //关闭弹窗
   showNewgroup.value = false;
 }
